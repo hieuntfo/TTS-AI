@@ -71,6 +71,13 @@ export default function App() {
          return;
       }
       
+      const contentType = resp.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+         const errText = await resp.text();
+         console.error("Non-JSON Response from API:", errText);
+         throw new Error(`Máy chủ gặp sự cố (Vercel Error): ${errText.slice(0, 80)}...`);
+      }
+      
       const data = await resp.json();
       
       if (!resp.ok) {

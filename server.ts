@@ -91,16 +91,15 @@ Ví dụ: 1. Nội dung A 2. Nội dung B -> "Thứ nhất, Nội dung A. Thứ 
 - Chỉ cung cấp văn bản đầu ra đã được xử lý hoàn chỉnh, không có markdown formatting thừa, không có câu mào đầu.
 - Giữ đúng luồng nội dung của văn bản gốc, không tự ý đảo lộn các đoạn.`;
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-  app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 
-  // API routes FIRST
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
+// API routes FIRST
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
   app.post("/api/optimize", async (req, res) => {
     try {
@@ -222,45 +221,37 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+// Vite middleware for development
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  import('vite').then(async (vite) => {
+    const viteServer = await vite.createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  // Generic error handler
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error("Express App Error:", err);
-    res.status(err.status || 500).json({
-      error: err.message || "Internal Server Error",
-    });
+    app.use(viteServer.middlewares);
+  }).catch(err => console.error("Vite setup error:", err));
+} else {
+  const distPath = path.join(process.cwd(), "dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
   });
-
-  if (process.env.VERCEL) {
-    // Vercel handles the listening, we just need to provide the app instance
-    console.log("Running in Vercel environment");
-  } else {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
-
-  return app;
 }
 
-let appInstance = express(); // Temporary stub for export
+// Generic error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Express App Error:", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal Server Error",
+  });
+});
 
-startServer().then(app => {
-  if (app) appInstance = app;
-}).catch(console.error);
+if (process.env.VERCEL) {
+  console.log("Running in Vercel environment");
+} else {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
-export default appInstance;
+export default app;
