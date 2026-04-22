@@ -98,8 +98,11 @@ export async function optimizeTextForTTS(inputText: string): Promise<string> {
       },
     });
     return response.text?.trim() || "";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini optimization error:", error);
-    throw new Error("Failed to optimize text with Gemini API.");
+    if (error.message && error.message.includes("GEMINI_API_KEY is missing")) {
+      throw new Error("Lỗi: Chưa cấu hình GEMINI_API_KEY. Vui lòng thêm biến môi trường này vào cài đặt dự án (Vercel/Settings/Environment Variables).");
+    }
+    throw new Error(error.message || "Failed to optimize text with Gemini API.");
   }
 }
