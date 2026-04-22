@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Loader2, Download, Square, Play } from "lucide-react";
-import { optimizeTextForTTS } from "./services/geminiService";
 
 export default function App() {
   const [rawText, setRawText] = useState("");
@@ -58,8 +57,27 @@ export default function App() {
     setAudioUrl(null);
     
     try {
-      const result = await optimizeTextForTTS(rawText);
-      setOptimizedText(result);
+      const resp = await fetch("/api/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: rawText })
+      });
+      
+      if (resp.status === 404) {
+         console.warn("Vercel Static Environment detected: 404 from our Express API on /api/optimize");
+         setOptimizedText(rawText);
+         setError("Cảnh báo: Đang chạy trên Vercel Front-end tĩnh. Tính năng Tối ưu AI bị vô hiệu hoá. Tự động chuyển thẳng sang đọc Raw Text.");
+         setIsOptimizing(false);
+         return;
+      }
+      
+      const data = await resp.json();
+      
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to optimize text from server.");
+      }
+      
+      setOptimizedText(data.result);
     } catch (err: any) {
       if (err.message && err.message.includes("GEMINI_API")) {
         // Fallback to raw text
