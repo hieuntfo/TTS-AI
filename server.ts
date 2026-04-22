@@ -135,9 +135,22 @@ async function startServer() {
     });
   });
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.VERCEL) {
+    // Vercel handles the listening, we just need to provide the app instance
+    console.log("Running in Vercel environment");
+  } else {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
+
+  return app;
 }
 
-startServer();
+let appInstance = express(); // Temporary stub for export
+
+startServer().then(app => {
+  if (app) appInstance = app;
+}).catch(console.error);
+
+export default appInstance;

@@ -111,6 +111,14 @@ export default function App() {
         });
       }
 
+      if (response.status === 404) {
+        console.warn("Vercel Static Environment detected: 404 from our Express API.");
+        setError("Cảnh báo: Bạn đang chạy giao diện trên Vercel (Front-end tĩnh) nên tính năng API máy chủ không hoạt động. Hệ thống auto-chuyển sang 'Giọng Máy Tính' (Web Speech API) để chạy Offline!");
+        setEngine("browser");
+        fallbackToWebSpeech(optimizedText);
+        return;
+      }
+
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
