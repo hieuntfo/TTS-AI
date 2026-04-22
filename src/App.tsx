@@ -61,7 +61,13 @@ export default function App() {
       const result = await optimizeTextForTTS(rawText);
       setOptimizedText(result);
     } catch (err: any) {
-      setError(err.message || "Đã xảy ra lỗi khi tối ưu hóa văn bản.");
+      if (err.message && err.message.includes("GEMINI_API")) {
+        // Fallback to raw text
+        setOptimizedText(rawText);
+        setError("Lưu ý: Chưa cấu hình AI, hệ thống tự động chuyển thẳng văn bản sang để đọc (Chế độ miễn phí hoàn toàn).");
+      } else {
+        setError(err.message || "Đã xảy ra lỗi khi tối ưu hóa văn bản.");
+      }
     } finally {
       setIsOptimizing(false);
     }
@@ -231,6 +237,16 @@ export default function App() {
             <span className="text-xs uppercase tracking-tighter opacity-60">Raw Text Input</span>
             <div className="flex gap-4 items-center">
               <span className="text-[10px] bg-[#222] px-2 py-1 rounded hidden sm:inline-block border border-[#333]">VI-VN-UTF8</span>
+              <button 
+                onClick={() => {
+                  setOptimizedText(rawText);
+                  if(!rawText.trim()) setError("Vui lòng nhập văn bản trước.");
+                }}
+                disabled={!rawText.trim()}
+                className="text-[10px] text-[#e0e0e0] border border-[#333] px-3 py-1.5 rounded hover:bg-[#333] hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                SKIP & COPY &#8594;
+              </button>
               <button 
                 onClick={handleOptimize}
                 disabled={isOptimizing || !rawText.trim()}
