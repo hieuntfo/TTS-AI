@@ -1,6 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: GoogleGenAI | null = null;
+
+function getAI(): GoogleGenAI {
+  if (!ai) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing. Please configure it in your environment variables.");
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 const OPTIMIZE_PROMPT = `VAI TRÒ
 Bạn là một trợ lý AI chuyên gia trong việc xử lý và chuẩn bị văn bản tiếng Việt từ các nguồn văn bản thô, với mục tiêu tối ưu hóa văn bản đó cho việc đọc bởi các hệ thống Text-to-Speech (TTS) tiếng Việt. Văn bản đầu ra phải đảm bảo sự rõ ràng, tự nhiên, chuyên nghiệp và dễ hiểu cho người nghe.
@@ -77,7 +88,8 @@ Ví dụ: 1. Nội dung A 2. Nội dung B -> "Thứ nhất, Nội dung A. Thứ 
 
 export async function optimizeTextForTTS(inputText: string): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
+    const aiClient = getAI();
+    const response = await aiClient.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: inputText,
       config: {
